@@ -13,14 +13,15 @@
 
 #define GUI_MARGIN 50
 #define TAB_MARGIN 50
+#define LABEL_WIDTH 0.25
 #define DISPLAY_X 500
 #define DISPLAY_Y 40
 #define MENU_X 110
-#define PRE_W 300
-#define TRG_W 150
-#define MAP_W 150
-#define NNI_W 150
-#define RGB_W 150
+#define PRE_W 250
+#define TRG_W 250
+#define MAP_W 250
+#define NNI_W 250
+#define RGB_W 250
 #define OSC_W 200
 
 class ofApp : public ofBaseApp{
@@ -39,7 +40,8 @@ public:
 		void mouseReleased(int x, int y, int button);
 		
 		//gui
-		void scroll(int & scroll, int width, int size, int key);
+		void scroll(ofxDatGuiButtonEvent e);
+		void scroll(int & scroll, int width, int size, int dir);
 		void guiSetup();
 
 		//module actions
@@ -119,7 +121,7 @@ public:
 		vector<ofxOscSender> vOSC;
 
 		//gui
-		vector<ofxDatGuiComponent*> gLS, gMod;
+		vector<ofxDatGuiComponent*> gLS, gMod, gScroll;
 		vector<ofxDatGuiComponent*> preGl, trigGl, mapGl, nnGl, rgbGl, oscGl; //tabs
 		vector<ofxDatGui*> gPres, gMaps, gTrigs, gNNI, gRGB, gOsc; //modules
 		vector<ofxDatGuiValuePlotter*> plotters; //preprocessor plotter

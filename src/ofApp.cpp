@@ -1,5 +1,11 @@
 #include "ofApp.h"
 
+/*
+¿color picker?
+chequear normalizacion en map, funcionaba raro para rgb, por ejemplo
+rgb y nni tienen que operar por id para que tenga sentido usarlos con trigger y map <- como preprocessor
+*/
+
 //--------------------------------------------------------------
 void ofApp::setup() {
 	ofSetWindowTitle("Untitled - El mapa no es el territorio");
@@ -189,14 +195,18 @@ void ofApp::update() {
 	}
 	if(receivedNew && vOSC.size() > 0) sendOsc();
 
+	//scroll
+	for (auto component : gScroll) component->update();
 	//tabs
-	for (int i = 0; i < gMod.size(); i++) gMod[i]->update();
+	for (auto component : gMod) component->update();
 	//load/save
-	for (int i = 0; i < gLS.size(); i++) gLS[i]->update();
+	for (auto component : gLS) component->update();
 }
 
 void ofApp::draw() {
 	ofBackground(0);
+	for (auto component : gScroll) component->draw();
+
 	if (vModes[drawMode] == "preprocessors") {
 		for (auto component : preGl) component->draw();
 		for (auto gui : gPres) gui->draw();
@@ -221,8 +231,8 @@ void ofApp::draw() {
 		for (auto component : nnGl) component->draw();
 		for (auto gui : gNNI) gui->draw();
 		ofPushStyle();
-		ofSetColor(45, 45, 45);
-		ofDrawRectangle(DISPLAY_X - 7, 20, ofGetWidth() - DISPLAY_X - MENU_X, ofGetHeight() - 40);
+		ofSetColor(45, 45, 45, 100);
+		ofDrawRectangle(DISPLAY_X - 8, 0, ofGetWidth() - DISPLAY_X - MENU_X, ofGetHeight());
 		ofPopStyle();
 		if (vNNI.size() > 0) {
 			ofPushStyle();
@@ -236,8 +246,8 @@ void ofApp::draw() {
 		for (auto component : rgbGl) component->draw();
 		for (auto gui : gRGB) gui->draw();
 		ofPushStyle();
-		ofSetColor(45, 45, 45);
-		ofDrawRectangle(DISPLAY_X - 7, 20, ofGetWidth() - DISPLAY_X - MENU_X, ofGetHeight() - 40);
+		ofSetColor(45, 45, 45, 100);
+		ofDrawRectangle(DISPLAY_X - 8, 0, ofGetWidth() - DISPLAY_X - MENU_X, ofGetHeight());
 		ofPopStyle();
 		if (vRGB.size() > 0) {
 			ofPushStyle();
@@ -282,13 +292,15 @@ void ofApp::udpReceive() {
 }
 
 void ofApp::keyPressed(int key) {
-	if (key == OF_KEY_RIGHT || key == OF_KEY_LEFT) {
-		if (vModes[drawMode] == "preprocessors") scroll(mScroll["preprocessors"], PRE_W, vPres.size(), key);
-		else if (vModes[drawMode] == "maps") scroll(mScroll["maps"], MAP_W, vMaps.size(), key);
-		else if (vModes[drawMode] == "triggers") scroll(mScroll["triggers"], TRG_W, vTriggers.size(), key);
-		else if (vModes[drawMode] == "nni") scroll(mScroll["nni"], NNI_W, vNNI.size(), key);
-		else if (vModes[drawMode] == "rgb") scroll(mScroll["rgb"], RGB_W, vRGB.size(), key);
-		else if (vModes[drawMode] == "osc") scroll(mScroll["osc"], OSC_W, oscNames.size(), key);
+	if (key == OF_KEY_PAGE_UP || key == OF_KEY_PAGE_DOWN) {
+		int dir = 1;
+		if (key == OF_KEY_PAGE_UP) dir = -1;
+		if (vModes[drawMode] == "preprocessors") scroll(mScroll["preprocessors"], PRE_W, vPres.size(), dir);
+		else if (vModes[drawMode] == "maps") scroll(mScroll["maps"], MAP_W, vMaps.size(), dir);
+		else if (vModes[drawMode] == "triggers") scroll(mScroll["triggers"], TRG_W, vTriggers.size(), dir);
+		else if (vModes[drawMode] == "nni") scroll(mScroll["nni"], NNI_W, vNNI.size(), dir);
+		else if (vModes[drawMode] == "rgb") scroll(mScroll["rgb"], RGB_W, vRGB.size(), dir);
+		else if (vModes[drawMode] == "osc") scroll(mScroll["osc"], OSC_W, oscNames.size(), dir);
 	}
 }
 
@@ -299,7 +311,7 @@ void ofApp::keyReleased(int key){
 		updateModButtons();
 	}
 	
-	//test osc otput with space bar
+	//test osc output with space bar
 	if (vModes[drawMode] == "osc" && key == ' ') {
 		cout << "osc test" << endl;
 		if (vOSC.size() > 0) {
@@ -336,9 +348,19 @@ void ofApp::mouseReleased(int x, int y, int button) {
 	}
 }
 
-void ofApp::scroll(int & scroll, int width, int size, int key) {
-			if (key == OF_KEY_RIGHT) scroll -= (width + 10);
-			else if (key == OF_KEY_LEFT) scroll += (width + 10);
+void ofApp::scroll(ofxDatGuiButtonEvent e) {
+	int dir = ofToInt(e.target->getName());
+	if (vModes[drawMode] == "preprocessors") scroll(mScroll["preprocessors"], PRE_W, vPres.size(), dir);
+	else if (vModes[drawMode] == "maps") scroll(mScroll["maps"], MAP_W, vMaps.size(), dir);
+	else if (vModes[drawMode] == "triggers") scroll(mScroll["triggers"], TRG_W, vTriggers.size(), dir);
+	else if (vModes[drawMode] == "nni") scroll(mScroll["nni"], NNI_W, vNNI.size(), dir);
+	else if (vModes[drawMode] == "rgb") scroll(mScroll["rgb"], RGB_W, vRGB.size(), dir);
+	else if (vModes[drawMode] == "osc") scroll(mScroll["osc"], OSC_W, oscNames.size(), dir);
+}
+
+void ofApp::scroll(int & scroll, int width, int size, int dir) {
+			if (dir == 1) scroll -= (width + 10);
+			else if (dir == -1) scroll += (width + 10);
 			int scrollMax = -1 * ((size - 1) * (width + 10) + 10);
 			if (scroll > 0) scroll = 0;
 			else if (scroll < scrollMax) scroll = scrollMax;
@@ -385,27 +407,27 @@ void ofApp::guiSetup() {
 	component->onTextInputEvent(this, &ofApp::addTrigText);
 	trigGl.push_back(component);
 	//nni
-	component = new ofxDatGuiLabel("Natural Neighbours");
+	component = new ofxDatGuiLabel("NNI");
 	component->setTheme(theme);
-	component->setWidth(150, 1);
+	component->setWidth(50, 1);
 	component->setPosition(10, 15);
 	nnGl.push_back(component);
 	component = new ofxDatGuiButton("add");
 	component->setTheme(theme);
 	component->setWidth(50, 1);
-	component->setPosition(162, 15);
+	component->setPosition(62, 15);
 	component->onButtonEvent(this, &ofApp::addNNIButton);
 	nnGl.push_back(component);
 	//rgb
 	component = new ofxDatGuiLabel("RGB");
 	component->setTheme(theme);
-	component->setWidth(150, 1);
+	component->setWidth(50, 1);
 	component->setPosition(10, 15);
 	rgbGl.push_back(component);
 	component = new ofxDatGuiButton("add");
 	component->setTheme(theme);
 	component->setWidth(50, 1);
-	component->setPosition(162, 15);
+	component->setPosition(62, 15);
 	component->onButtonEvent(this, &ofApp::addRGBButton);
 	rgbGl.push_back(component);
 	//osc
@@ -456,6 +478,25 @@ void ofApp::guiSetup() {
 		gLS[i]->setLabelAlignment(ofxDatGuiAlignment::CENTER);
 		gLS[i]->setBackgroundColor(60);
 	}
+
+	//scroll
+	component = new ofxDatGuiButton("<");
+	component->setLabelAlignment(ofxDatGuiAlignment::CENTER);
+	component->setName("-1");
+	component->onButtonEvent(this, &ofApp::scroll);
+	component->setTheme(theme);
+	component->setWidth(20, 1);
+	component->setPosition(10, ofGetHeight() - 30);
+	gScroll.push_back(component);
+
+	component = new ofxDatGuiButton(">");
+	component->setLabelAlignment(ofxDatGuiAlignment::CENTER);
+	component->setName("1");
+	component->onButtonEvent(this, &ofApp::scroll);
+	component->setTheme(theme);
+	component->setWidth(20, 1);
+	component->setPosition(32, ofGetHeight() - 30);
+	gScroll.push_back(component);
 }
 
 void ofApp::addPreButton(ofxDatGuiButtonEvent e) {
@@ -507,6 +548,7 @@ void ofApp::addPreprocessor(vector<Preprocessor>& pres, vector<ofxDatGui*>& guis
 void ofApp::addTrigText(ofxDatGuiTextInputEvent e) {
 		int keys = ofToInt(e.text);
 		if (keys > 0 && keys < 10) addTrigger(vTriggers, gTrigs, keys);
+		e.target->setText("");
 }
 
 void ofApp::addTrigger(vector<Trigger>& trigs, vector<ofxDatGui*> & guis, int dimentions, int name) {
@@ -535,6 +577,7 @@ void ofApp::addTrigger(vector<Trigger>& trigs, vector<ofxDatGui*> & guis, int di
 		ofxDatGuiFolder* folder = gui->addFolder(sI);
 		folder->addTextInput("key:", "")->setName(sName + "-key:" + sI);
 		folder->addTextInput("thresh:", "")->setName(sName + "-thresh:" + sI);
+		folder->addTextInput("margin:", "")->setName(sName + "-margin:" + sI);
 		folder->addToggle("invert:", false)->setName(sName + "-invert:" + sI);
 		folder->collapse();
 	}
@@ -547,7 +590,7 @@ void ofApp::addTrigger(vector<Trigger>& trigs, vector<ofxDatGui*> & guis, int di
 	gui->setAutoDraw(false);
 	gui->setPosition(0, GUI_MARGIN);
 	gui->setTheme(new ofxDatGuiThemeAqua(),true);
-	gui->setWidth(TRG_W, 0.5);
+	gui->setWidth(TRG_W, LABEL_WIDTH);
 	gui->getLabel("id: " + sName)->setBackgroundColor(40);
 	guis.push_back(gui);
 }
@@ -555,6 +598,7 @@ void ofApp::addTrigger(vector<Trigger>& trigs, vector<ofxDatGui*> & guis, int di
 void ofApp::addMapText(ofxDatGuiTextInputEvent e) {
 		int keys = ofToInt(e.text);
 		if (keys > 0 && keys < 10) addMap(vMaps, gMaps, keys);
+		e.target->setText("");
 }
 
 void ofApp::addMap(vector<CCMap> & maps, vector<ofxDatGui*> & guis, int dimentions, int name) {
@@ -595,7 +639,7 @@ void ofApp::addMap(vector<CCMap> & maps, vector<ofxDatGui*> & guis, int dimentio
 	gui->setAutoDraw(false);
 	gui->setPosition(0, GUI_MARGIN);
 	gui->setTheme(new ofxDatGuiThemeAqua(), true);
-	gui->setWidth(MAP_W, 0.5);
+	gui->setWidth(MAP_W, LABEL_WIDTH);
 	gui->getLabel("id: " + sName)->setBackgroundColor(40);
 	guis.push_back(gui);
 }
@@ -631,7 +675,7 @@ void ofApp::addNNI(vector<NNInt>& vNNI, vector<ofxDatGui*> & guis, int name) {
 	gui->setAutoDraw(false);
 	gui->setPosition(0, GUI_MARGIN);
 	gui->setTheme(new ofxDatGuiThemeAqua(), true);
-	gui->setWidth(MAP_W, 0.5);
+	gui->setWidth(MAP_W, LABEL_WIDTH);
 	gui->getLabel("id: " + sName)->setBackgroundColor(40);
 	guis.push_back(gui);
 }
@@ -670,7 +714,7 @@ void ofApp::addRGB(vector<RGBInt>& vRgb, vector<ofxDatGui*>& guis, int name) {
 	gui->setAutoDraw(false);
 	gui->setPosition(0, GUI_MARGIN);
 	gui->setTheme(new ofxDatGuiThemeAqua(), true);
-	gui->setWidth(MAP_W, 0.5);
+	gui->setWidth(MAP_W, LABEL_WIDTH);
 	gui->getLabel("id: " + sName)->setBackgroundColor(40);
 	guis.push_back(gui);
 }
@@ -824,8 +868,7 @@ void ofApp::save(ofxDatGuiButtonEvent e) {
 				settings.addValue("invert", vTriggers[i].getInverted()[j]);
 				settings.addValue("inMin", vTriggers[i].getValues()[j][0]);
 				settings.addValue("inMax", vTriggers[i].getValues()[j][1]);
-				settings.addValue("outMin", vTriggers[i].getValues()[j][2]);
-				settings.addValue("outMax", vTriggers[i].getValues()[j][3]);
+				settings.addValue("margin", vTriggers[i].getMargins()[j]);
 				settings.popTag();
 			}
 			settings.addValue("active", vTriggers[i].getActive());
@@ -991,8 +1034,7 @@ void ofApp::load(ofxDatGuiButtonEvent e) {
 				curTrigger.setKey(j, settings.getValue("key", ""));
 				curTrigger.setInMin(j, settings.getValue("inMin", 0.0f));
 				curTrigger.setInMax(j, settings.getValue("inMax", 1.0f));
-				curTrigger.setOutMin(j, settings.getValue("outMin", 0.0f));
-				curTrigger.setOutMax(j, settings.getValue("outMax", 0.0f));
+				curTrigger.setMargin(j, settings.getValue("margin", 0.0f));
 				curTrigger.setInverted(j, settings.getValue("invert", false));
 				settings.popTag();
 			}
@@ -1010,6 +1052,7 @@ void ofApp::load(ofxDatGuiButtonEvent e) {
 				string sI = ofToString(j + 1);
 				gTrigs[gTrigs.size() - 1]->getTextInput(sName + "-key:" + sI, sI)->setText(curTrigger.getKeys()[j]);
 				gTrigs[gTrigs.size() - 1]->getTextInput(sName + "-thresh:" + sI, sI)->setText(sValues);
+				gTrigs[gTrigs.size() - 1]->getTextInput(sName + "-margin:" + sI, sI)->setText(ofToString(curTrigger.getMargins()[j]));
 				gTrigs[gTrigs.size() - 1]->getToggle(sName + "-invert:" + sI, sI)->setChecked(curTrigger.getInverted()[j]);
 			}
 			gTrigs[gTrigs.size() - 1]->getTextInput(sName + "-address")->setText(curTrigger.getAddress());
@@ -1340,9 +1383,14 @@ void ofApp::trigTextInput(ofxDatGuiTextInputEvent e){
 			vector<float> fValues;
 			for (int i = 0; i < values.size(); i++) fValues.push_back(ofToFloat(values[i]));
 			int dim = ofToInt(ofSplitString(name, ":")[1]) - 1;
-			if (values.size() == 4) vTriggers[index].setValues(dim, fValues);
+			if (fValues.size() == 1) fValues.push_back(fValues[0]);
+			if (fValues.size() == 2) vTriggers[index].setValues(dim, fValues);
 		}
-
+		if (prop == "margin") {
+			int dim = ofToInt(ofSplitString(name, ":")[1]) - 1;
+			cout << sValue << ", " << ofToFloat(sValue) << endl;
+			vTriggers[index].setMargin(dim, ofToFloat(sValue));
+		}
 		if (prop == "address") vTriggers[index].setAddress(sValue);
 	}
 }

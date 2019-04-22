@@ -12,14 +12,14 @@ void Trigger::setup(vector<string> keys, string address) {
 	_sKeys.clear();
 	_pos.clear();
 	_invert.clear();
-
-	for (int i = 0; i < keys.size(); i++) {
-		vector<float> empty = { 0,0,0,0 };
+	_numDim = keys.size();
+	for (int i = 0; i < _numDim; i++) {
+		vector<float> empty = { 0,0 };
 		_sKeys.push_back(keys[i]);
 		_pos.push_back(empty);
 		_invert.push_back(false);
 	}
-	_numDim = keys.size();
+	_margin.assign(_numDim, 0);
 	_osc = address;
 }
 
@@ -27,19 +27,24 @@ void Trigger::setup(int numKeys, string address) {
 	_sKeys.clear();
 	_pos.clear();
 	_invert.clear();
+	_numDim = numKeys;
 
-	for (int i = 0; i < numKeys; i++) {
-		vector<float> empty = { 0,0,0,0 };
+	for (int i = 0; i < _numDim; i++) {
+		vector<float> empty = { 0,0 };
 		_sKeys.push_back("");
 		_pos.push_back(empty);
 		_invert.push_back(false);
 	}
-	_numDim = numKeys;
+	_margin.assign(_numDim, 0);
 	_osc = address;
 }
 
 void Trigger::setValues(int dimention, vector<float> values) {
-	if (dimention < _numDim && values.size() == 4) _pos[dimention] = values;
+	if (dimention < _numDim && values.size() == 2) _pos[dimention] = values;
+}
+
+void Trigger::setMargin(int dimention, float margin) {
+	_margin[dimention] = margin;
 }
 
 void Trigger::setInverted(int dimention, bool value) {
@@ -60,18 +65,6 @@ void Trigger::setInMin(int dimention, float value) {
 
 void Trigger::setInMax(int dimention, float value) {
 	if (dimention < _numDim) _pos[dimention][1] = value;
-}
-
-void Trigger::setOutMin(int dimention, float value) {
-	if (dimention < _numDim) _pos[dimention][2] = value;
-}
-
-void Trigger::setOutMax(int dimention, float value) {
-	if (dimention < _numDim) _pos[dimention][3] = value;
-}
-
-void Trigger::setOutRatio(int dimention, float value) {
-	//thresholds as ratio
 }
 
 void Trigger::setAddress(string value) {
@@ -99,8 +92,8 @@ int Trigger::update(vector<map<string, float>> values){
 				map<string, float>::iterator member = curMap.find(_sKeys[i]);
 				if (member != curMap.end()) {
 					bool curInside = false;
-					if (_invert[i]) curInside = member->second < _pos[i][2] || member->second > _pos[i][3];
-					else curInside = member->second > _pos[i][0] && member->second < _pos[i][1];
+					if (_invert[i]) curInside = member->second <= _pos[i][0] - _margin[i] || member->second >= _pos[i][1] + _margin[i];
+					else curInside = member->second >= _pos[i][0] && member->second <= _pos[i][1];
 					inside = inside && curInside;
 				}
 				else {
@@ -123,8 +116,8 @@ int Trigger::update(vector<map<string, float>> values){
 				map<string, float>::iterator member = curMap.find(_sKeys[i]);
 				if (member != curMap.end()) {
 					bool keyOutside;
-					if (_invert[i]) keyOutside = member->second > _pos[i][0] && member->second < _pos[i][1];
-					else keyOutside = member->second < _pos[i][2] || member->second > _pos[i][3];
+					if (_invert[i]) keyOutside = member->second >= _pos[i][0] && member->second <= _pos[i][1];
+					else keyOutside = member->second <= _pos[i][0] - _margin[i] || member->second >= _pos[i][1] + _margin[i];
 					mapOutside = mapOutside || keyOutside;
 				}
 				else {
@@ -160,6 +153,10 @@ int Trigger::getName() {
 
 int Trigger::getChange(){
 	return _changed;
+}
+
+vector<float> Trigger::getMargins() {
+	return _margin;
 }
 
 bool Trigger::getState()

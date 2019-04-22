@@ -13,14 +13,12 @@ public:
 	void setup(vector<string> keys, string address = "");
 	void setup(int numKeys, string address = "");
 	void setValues(int dimention, vector<float> values);
+	void setMargin(int dimention, float margin);
 	void setInverted(int dimention, bool value);
 	void setName(int value);
 	void setKey(int dimention, string value);
 	void setInMin(int dimention, float value);
 	void setInMax(int dimention, float value);
-	void setOutMin(int dimention, float value);
-	void setOutMax(int dimention, float value);
-	void setOutRatio(int dimention, float value);
 	void setAddress(string value);
 	void setActive(bool value);
 	void clear();
@@ -29,6 +27,7 @@ public:
 	vector<bool> getInverted();
 	int getName();
 	int getChange();
+	vector<float> getMargins();
 	bool getState();
 	string getAddress();
 	bool getActive();
@@ -40,6 +39,7 @@ private:
 	vector<bool> _invert;
 	vector<string> _sKeys;
 	vector<vector<float>> _pos;
+	vector<float> _margin;
 };
 
 #endif

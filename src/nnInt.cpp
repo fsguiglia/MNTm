@@ -182,6 +182,7 @@ void NNInt::clear() {
 	_nPoints.clear();
 	_vZones.clear();
 	_vWeights.clear();
+	fboDraw();
 }
 
 vector<string> NNInt::getKeys() {
