@@ -95,81 +95,80 @@ int NNInt::getName() {
 	return _name;
 }
 
-bool NNInt::updateWeights(vector<map<string, float>> values, int step) {
-	bool newValue = false;
-	if (_go) {
-		ofPoint vPoint = { 0, 0 };
-		bool bKeys[] = { false, false };
-		int numSamples = 0;
+void NNInt::updateWeights(vector<map<string, float>> & values, int step) {
+	if (_go & _points.size() > 1) {
 		_fWeights.clear();
-		for (int i = 0; i < _points.size(); i++) {
-			_fWeights.push_back(0);
-		}
 
 		//only 2d for now
-		for (int i = 0; i < values.size(); i++) {
-			for (int j = 0; j < _keys.size(); j++) {
-				map<string, float>::iterator val = values[i].find(_keys[j]);
-				if (val != values[i].end()) vPoint[j] = int(val->second * _scale[j]);
-				if (vPoint[j] < 5) vPoint[j] = 5;
-				if (vPoint[j] > _scale[j] - 5) vPoint[j] = _scale[j] - 5;
-				bKeys[j] = bKeys[j] || val != values[i].end();
+		for (auto & value : values) {
+			vector <float> curWeights;
+			ofPoint vPoint = { 0, 0 };
+			curWeights.assign(_points.size(), 0);
+			int numSamples = 0;
+
+			bool bKeys[] = { false, false };
+			for (int i = 0; i < _keys.size(); i++) {
+				map<string, float>::iterator val = value.find(_keys[i]);
+				if (val != value.end()) vPoint[i] = int(val->second * _scale[i]);
+				if (vPoint[i] < 5) vPoint[i] = 5;
+				if (vPoint[i] > _scale[i] - 5) vPoint[i] = _scale[i] - 5;
+				bKeys[i] = bKeys[i] || val != value.end();
 			}
-		}
 
-		vPoint[0] = (int)(_scale[0] - vPoint[0]);
+			vPoint[0] = (int)(_scale[0] - vPoint[0]);
 
-		if (_points.size() > 1 && bKeys[0] && bKeys[1]) {
-			newValue = true;
-			_vWeights.clear();
-			_vWeights.setBounds(_bounds);
-			_vWeights.addPoints(_points);
-			_vWeights.addPoint(vPoint);
-			_vWeights.generate();
+			if (bKeys[0] && bKeys[1]) {
+				_vWeights.clear();
+				_vWeights.setBounds(_bounds);
+				_vWeights.addPoints(_points);
+				_vWeights.addPoint(vPoint);
+				_vWeights.generate();
 
-			/*
-			me quedo con el canal rojo. 254 es el mayor valor. 255 corresponde al negro del borde o el
-			rojo del tag. inside es muy lento. buscar una mejor solucion.
-			*/
-			
-			ofPolyline poly;
-			vector<ofxVoronoiCell> cells = _vWeights.getCells();
-			poly.addVertices(cells[cells.size() - 1].points);
-			poly.close();
-			ofRectangle polyRect = poly.getBoundingBox();
-			
-			int downW = polyRect.width - ((int)polyRect.width % step);
-			int downH = polyRect.height - ((int)polyRect.height % step);
+				/*
+				me quedo con el canal rojo. 254 es el mayor valor. 255 corresponde al negro del borde o el
+				rojo del tag. inside es muy lento. buscar una mejor solucion.
+				*/
 
-			for (int i = 0; i < downW; i += step) {
-				for (int j = 0; j < downH; j += step) {
-					int xIn = i + polyRect.getMinX();
-					int yIn = j + polyRect.getMinY();
-					if (poly.inside(xIn, yIn)) {
-						int zone = 254 - (int)_fboPixels.getColor(xIn, yIn).r;
-						if (zone >= 0 && zone < _fWeights.size()) {
-							_fWeights[zone] += 1;
-							numSamples += 1;
+				ofPolyline poly;
+				vector<ofxVoronoiCell> cells = _vWeights.getCells();
+				poly.addVertices(cells[cells.size() - 1].points);
+				poly.close();
+				ofRectangle polyRect = poly.getBoundingBox();
+
+				int downW = polyRect.width - ((int)polyRect.width % step);
+				int downH = polyRect.height - ((int)polyRect.height % step);
+
+				for (int i = 0; i < downW; i += step) {
+					for (int j = 0; j < downH; j += step) {
+						int xIn = i + polyRect.getMinX();
+						int yIn = j + polyRect.getMinY();
+						if (poly.inside(xIn, yIn)) {
+							int zone = 254 - (int)_fboPixels.getColor(xIn, yIn).r;
+							if (zone >= 0 && zone < curWeights.size()) {
+								curWeights[zone] += 1;
+								numSamples += 1;
+							}
 						}
 					}
 				}
-			}
-			float maxWeight = -1;
-			for (int i = 0; i < _fWeights.size(); i++) {
-				_fWeights[i] /= numSamples;
-				if (_fWeights[i] > maxWeight) {
-					_selZone = i;
-					maxWeight = _fWeights[i];
+
+				float maxWeight = -1;
+				for (int i = 0; i < curWeights.size(); i++) {
+					curWeights[i] /= numSamples;
+					value["nni" + ofToString(_name) + "-" + ofToString(i + 1)] = curWeights[i];
+					if (curWeights[i] > maxWeight) {
+						_selZone = i;
+						maxWeight = curWeights[i];
+					}
 				}
+				_fWeights.push_back(curWeights);
 			}
 		}
 	}
 	fboDraw();
-
-	return newValue;
 }
 
-vector<float> NNInt::getWeights() {
+vector<vector<float>> NNInt::getWeights() {
 	return _fWeights;
 }
 

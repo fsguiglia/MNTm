@@ -3,7 +3,7 @@
 #include "../resource.h"
 
 //========================================================================
-/*
+
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd) {
 
 	ofGLFWWindowSettings settings;
@@ -17,10 +17,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	ofRunApp(new ofApp());
 }
-*/
 
-
-
+/*
 int main( ){
 	ofGLFWWindowSettings settings;
 	settings.setSize(1024, 480);
@@ -28,3 +26,4 @@ int main( ){
 	ofCreateWindow(settings);
 	return ofRunApp(new ofApp);
 }
+*/

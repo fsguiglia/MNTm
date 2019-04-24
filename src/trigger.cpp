@@ -135,7 +135,6 @@ int Trigger::update(vector<map<string, float>> values){
 			_triggered = false;
 		}
 	}
-
 	return _changed;
 }
 

@@ -1,9 +1,9 @@
 #include "ofApp.h"
 
 /*
-¿color picker?
-chequear normalizacion en map, funcionaba raro para rgb, por ejemplo
-rgb y nni tienen que operar por id para que tenga sentido usarlos con trigger y map <- como preprocessor
+nni & rgb weight per id
+fixed osc load
+fixed map datatypes
 */
 
 //--------------------------------------------------------------
@@ -37,7 +37,7 @@ void ofApp::setup() {
 
 void ofApp::update() {
 	//stores averages, min and max after preprocessing
-	map<string, float> ppOutput, nniOutput, rgbOutput;
+	map<string, float> ppOutput;
 	idMap.clear();
 	receivedNew = false;
 	udpReceive();
@@ -123,12 +123,8 @@ void ofApp::update() {
 	}
 
 	for (auto &nni : vNNI) {
-		if (nni.getActive() && receivedNew) {
-			nni.updateWeights(idMap);
-			for (int i = 0; i < nni.getWeights().size(); i++) nniOutput["nni" + ofToString(nni.getName()) + "-" + ofToString(i+1)] = nni.getWeights()[i];
-		}
+		if (nni.getActive() && receivedNew) nni.updateWeights(idMap);
 	}
-	if (!nniOutput.empty())idMap.push_back(nniOutput);
 
 	//rgb
 	for (auto & component : rgbGl) {
@@ -145,13 +141,8 @@ void ofApp::update() {
 	}
 
 	for (auto &rgb : vRGB) {
-		if (rgb.getActive() && receivedNew) {
-			rgb.updateWeights(idMap);
-			for (int i = 0; i < rgb.getWeights().size(); i++) rgbOutput["rgb" + ofToString(rgb.getName()) + "-" + ofToString(i + 1)] = rgb.getWeights()[i];
-		}
+		if (rgb.getActive() && receivedNew) rgb.updateWeights(idMap);
 	}
-
-	if (!rgbOutput.empty())idMap.push_back(rgbOutput);
 
 	//maps
 	for (auto & component : mapGl) {
@@ -194,7 +185,7 @@ void ofApp::update() {
 		gOsc[i]->update();
 	}
 	if(receivedNew && vOSC.size() > 0) sendOsc();
-
+	
 	//scroll
 	for (auto component : gScroll) component->update();
 	//tabs
@@ -763,11 +754,11 @@ void ofApp::sendOsc() {
 							m.addFloatArg(mapValues[k][l]);
 						}
 					}
-					if(m.getNumArgs() > 0) vOSC[i].sendMessage(m);
+					if (m.getNumArgs() > 0) vOSC[i].sendMessage(m);
 					m.clear();
 				}
 			}
-			
+
 			for (int j = 0; j < vTriggers.size(); j++) {
 				if (vTriggers[j].getActive()) {
 					if (vTriggers[j].getChange() != -1) {
@@ -779,25 +770,25 @@ void ofApp::sendOsc() {
 				}
 			}
 
-			for(int j = 0; j < vNNI.size(); j++) {
-				if (vNNI[j].getActive()) {
-					m.setAddress(vNNI[j].getAddress());
-					for (auto &weight : vNNI[j].getWeights()) {
-						m.addFloatArg(weight);
+			for (auto nni : vNNI) {
+				if (nni.getActive()) {
+					for (int j = 0; j < nni.getWeights().size(); j++) {
+						m.setAddress(nni.getAddress() + "/" + ofToString(j));
+						for (int k = 0; k < nni.getWeights()[j].size(); k++) m.addFloatArg(nni.getWeights()[j][k]);
+						vOSC[i].sendMessage(m);
+						m.clear();
 					}
-					vOSC[i].sendMessage(m);
-					m.clear();
 				}
 			}
-
-			for (int j = 0; j < vRGB.size(); j++) {
-				if (vRGB[j].getActive()) {
-					m.setAddress(vRGB[j].getAddress());
-					for (auto &weight : vRGB[j].getWeights()) {
-						m.addFloatArg(weight);
+	
+			for (auto rgb : vRGB) {
+				if (rgb.getActive()) {
+					for (int j = 0; j < rgb.getWeights().size(); j++) {
+						m.setAddress(rgb.getAddress() + "/" + ofToString(j));
+						for (int k = 0; k < rgb.getWeights()[j].size(); k++) m.addFloatArg(rgb.getWeights()[j][k]);
+						vOSC[i].sendMessage(m);
+						m.clear();
 					}
-					vOSC[i].sendMessage(m);
-					m.clear();
 				}
 			}
 		}
@@ -1119,8 +1110,9 @@ void ofApp::load(ofxDatGuiButtonEvent e) {
 		settings.pushTag("senders");
 		for (int i = 0; i < settings.getNumTags("sender"); i++) {
 			settings.pushTag("sender", i);
-			string sIpPort = settings.getValue("ip", "0") + ":" + ofToString(settings.getValue("port", 0));
+			string sIpPort = settings.getValue("ip", "127.0.0.1") + ":" + ofToString(settings.getValue("port", 7000));
 			addOsc();
+			oscSet[oscSet.size() - 1] = true;
 			vOSC[vOSC.size() - 1].setup(settings.getValue("ip", "0"), settings.getValue("port", 0));
 			gOsc[gOsc.size() - 1]->getTextInput(ofToString(oscNames[oscNames.size() - 1]) + "-ip:port")->setText(sIpPort);
 			settings.popTag();
@@ -1388,7 +1380,6 @@ void ofApp::trigTextInput(ofxDatGuiTextInputEvent e){
 		}
 		if (prop == "margin") {
 			int dim = ofToInt(ofSplitString(name, ":")[1]) - 1;
-			cout << sValue << ", " << ofToFloat(sValue) << endl;
 			vTriggers[index].setMargin(dim, ofToFloat(sValue));
 		}
 		if (prop == "address") vTriggers[index].setAddress(sValue);

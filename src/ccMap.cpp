@@ -121,10 +121,6 @@ vector<bool> CCMap::getCrop() {
 }
 
 void CCMap::scale(int index, float & value, vector<float> range, bool crop) {
-	/*
-	switch (_curves[index]) {
-	}
-	*/
 	if (range[0] != range[1]) {
 		value = (range[1] - range[0]) * value;
 		value += range[0];
