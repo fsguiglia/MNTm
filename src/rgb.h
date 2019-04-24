@@ -20,8 +20,8 @@ public:
 	void setAddress(string osc);
 	string getAddress();
 	void draw(int x = 0, int y = 0);
-	void updateWeights(vector<map<string, float>> values);
-	vector<float> getWeights();
+	void updateWeights(vector<map<string, float>> & values);
+	vector<vector<float>> getWeights();
 	
 private:
 	bool _active;
@@ -32,7 +32,7 @@ private:
 	vector <float> _size;
 	ofImage _image;
 	ofPixels _pixels;
-	vector<float> _weights;
+	vector<vector<float>> _weights;
 	ofFbo _fbo;
 };
 

@@ -20,8 +20,8 @@ public:
 	void previewZone(glm::vec3 newPoint);
 	void updateFbo();
 	int getName();
-	bool updateWeights(vector<map<string, float>> values, int step = 6);
-	vector<float> getWeights();
+	void updateWeights(vector<map<string, float>> & values, int step = 6);
+	vector<vector<float>> getWeights();
 	void draw(int x, int y);
 	void clear();
 	vector<string> getKeys();
@@ -40,7 +40,7 @@ private:
 	ofPixels _fboPixels;
 	vector<int> _scale;
 	vector<string> _keys;
-	vector<float> _fWeights;
+	vector<vector<float>> _fWeights;
 	vector<glm::vec3> _points, _nPoints;
 	ofxVoronoi _vZones, _vWeights;
 };

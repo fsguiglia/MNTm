@@ -92,55 +92,68 @@ void RGBInt::draw(int x, int y) {
 	_fbo.draw(x, y);
 }
 
-void RGBInt::updateWeights(vector<map<string, float>> values) {
+void RGBInt::updateWeights(vector<map<string, float>> & values) {
+	_weights.clear();
 	if (_image.isAllocated()) {
-		ofPoint vPoint = { 0, 0 };
-		bool bKeys[] = { false, false };
-		_weights = { 0,0,0 };
 		int radius = ceil(_sqSize * 0.5);
+		bool drawn = false;
 		//only 2d for now
-		for (int i = 0; i < values.size(); i++) {
-			for (int j = 0; j < _keys.size(); j++) {
-				map<string, float>::iterator val = values[i].find(_keys[j]);
-				if (val != values[i].end()) vPoint[j] = val->second * _size[j];
-				if (vPoint[j] < radius) vPoint[j] = radius;
-				if (vPoint[j] > _size[j] - radius) vPoint[j] = _size[j] - radius;
-				bKeys[j] = bKeys[j] || val != values[i].end();
-			}
-		}
+		for (auto & value : values) {
+			bool bKeys[] = { false, false };
+			ofPoint vPoint = { 0, 0 };
+			vector <float> curWeights = { 0,0,0 };
 
-		if (bKeys[0] && bKeys[1]) {
-			int samples = 0;
-			for (int i = 0; i < _sqSize; i++) {
-				for (int j = 0; j < _sqSize; j++) {
-					samples++;
-					ofColor curColor = _image.getColor(vPoint[0] - radius + i, vPoint[1] - radius + j);
-					for (int k = 0; k < _weights.size(); k++) {
-						_weights[k] += curColor[k];
+			for (int i = 0; i < _keys.size(); i++) {
+				map<string, float>::iterator val = value.find(_keys[i]);
+				if (val != value.end()) vPoint[i] = val->second * _size[i];
+				if (vPoint[i] < radius) vPoint[i] = radius;
+				if (vPoint[i] > _size[i] - radius) vPoint[i] = _size[i] - radius;
+				bKeys[i] = bKeys[i] || val != value.end();
+			}
+
+			if (bKeys[0] && bKeys[1]) {
+				int samples = 0;
+				for (int i = 0; i < _sqSize; i++) {
+					for (int j = 0; j < _sqSize; j++) {
+						samples++;
+						ofColor curColor = _image.getColor(vPoint[0] - radius + i, vPoint[1] - radius + j);
+						for (int k = 0; k < curWeights.size(); k++) curWeights[k] += curColor[k];
 					}
 				}
+				for (int i = 0; i < curWeights.size(); i++) {
+					curWeights[i] /= (float)samples;
+					curWeights[i] /= 255;
+					value["rgb" + ofToString(_name) + "-" + ofToString(i+1)] = curWeights[i];
+				}
+				_weights.push_back(curWeights);
+
+				if (!drawn) {
+					_fbo.begin();
+					ofClear(0);
+					_image.draw(0, 0);
+					if (bKeys[0] && bKeys[1]) {
+						ofPushStyle();
+						ofSetColor(0);
+						ofDrawLine(vPoint.x, 0, vPoint.x, _size[1]);
+						ofDrawLine(0, vPoint.y, _size[0], vPoint.y);
+						ofDrawRectangle(vPoint.x - radius - 1, vPoint.y - radius - 1, _sqSize + 2, _sqSize + 2);
+						ofSetColor(_weights[0][0] * 255, _weights[0][1] * 255, _weights[0][2] * 255);
+						ofDrawRectangle(vPoint.x - radius, vPoint.y - radius, _sqSize, _sqSize); 
+						ofSetColor(255, 75);
+						ofDrawRectangle(0, _fbo.getHeight() - 20, _fbo.getWidth(), 20);
+						ofSetColor(0);
+						string sColor = ofToString(_weights[0][0]) + ", " + ofToString(_weights[0][1]) + ", " + ofToString(_weights[0][2]);
+						ofDrawBitmapString(sColor, 10, _fbo.getHeight() - 5);
+						ofPopStyle();
+					}
+					_fbo.end();
+					drawn = true;
+				}
 			}
-
-			for (auto & weight : _weights) weight /= (float)samples;
 		}
-
-		_fbo.begin();
-		ofClear(0);
-		_image.draw(0, 0);
-		if (bKeys[0] && bKeys[1]) {
-			ofPushStyle();
-			ofSetColor(0);
-			ofDrawLine(vPoint.x, 0, vPoint.x, _size[1]);
-			ofDrawLine(0, vPoint.y, _size[0], vPoint.y);
-			ofDrawRectangle(vPoint.x - radius - 1, vPoint.y - radius - 1, _sqSize + 2, _sqSize + 2);
-			ofSetColor(_weights[0], _weights[1], _weights[2]);
-			ofDrawRectangle(vPoint.x - radius, vPoint.y - radius, _sqSize, _sqSize);
-			ofPopStyle();
-		}
-		_fbo.end();
 	}
 }
 
-vector<float> RGBInt::getWeights() {
+vector<vector<float>> RGBInt::getWeights() {
 	return _weights;
 }
