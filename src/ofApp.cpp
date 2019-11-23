@@ -1,10 +1,12 @@
 #include "ofApp.h"
 
 /*
-nni & rgb weight per id
-fixed osc load
-fixed map datatypes
+bug when saving sender
+active button on sender
+drag and drop old nni points
+right click to erase old nni points
 */
+
 
 //--------------------------------------------------------------
 void ofApp::setup() {
@@ -33,6 +35,7 @@ void ofApp::setup() {
 	rUDP.Bind(21234);
 	rUDP.SetEnableBroadcast(true);
 	rUDP.SetNonBlocking(true);
+	oscReceiver.setup(21235);
 }
 
 void ofApp::update() {
@@ -41,6 +44,7 @@ void ofApp::update() {
 	idMap.clear();
 	receivedNew = false;
 	udpReceive();
+	oscReceive();
 
 	//mouse
 	if (mouseControl) {
@@ -280,6 +284,22 @@ void ofApp::udpReceive() {
 		}
 	}
 	
+}
+
+void ofApp::oscReceive() {
+	int numMessages = 0;
+	while (oscReceiver.hasWaitingMessages()) {
+		ofxOscMessage m;
+		oscReceiver.getNextMessage(m);
+		if (m.getAddress() == "/mnt") {
+			map <string, float> curMap;
+			receivedNew = true;
+			curMap["id"] = -1 * numMessages;
+			for (int i = 0; i < m.getNumArgs(); i++) curMap[ofToString(i)] = m.getArgAsFloat(i);
+			idMap.push_back(curMap);
+		}
+		numMessages++;
+	}
 }
 
 void ofApp::keyPressed(int key) {
@@ -618,6 +638,7 @@ void ofApp::addMap(vector<CCMap> & maps, vector<ofxDatGui*> & guis, int dimentio
 		ofxDatGuiFolder* folder = gui->addFolder(sI);
 		folder->addTextInput("key","")->setName(sName + "-key:" + sI);
 		folder->addTextInput("range", "0,1")->setName(sName + "-range:" + sI);
+		folder->addTextInput("exp", "1")->setName(sName + "-exp:" + sI);
 		folder->addToggle("crop", true)->setName(sName + "-crop:" + sI);
 		folder->collapse();
 	}
@@ -835,6 +856,7 @@ void ofApp::save(ofxDatGuiButtonEvent e) {
 				settings.addValue("key", vMaps[i].getKeys()[j]);
 				settings.addValue("rMin", vMaps[i].getRange()[j][0]);
 				settings.addValue("rMax", vMaps[i].getRange()[j][1]);
+				settings.addValue("exp", vMaps[i].getExponent()[j]);
 				settings.addValue("crop", vMaps[i].getCrop()[j]);
 				settings.popTag();
 			}
@@ -991,6 +1013,7 @@ void ofApp::load(ofxDatGuiButtonEvent e) {
 				settings.pushTag("dim", j);
 				curMap.setKey(j, settings.getValue("key", ""));
 				curMap.setRange(j, settings.getValue("rMin", 0.0f), settings.getValue("rMax", 0.0f));
+				curMap.setExponent(j, settings.getValue("exp", 1.0f));
 				curMap.setCrop(j, settings.getValue("crop", true));
 				settings.popTag();
 			}
@@ -1296,6 +1319,7 @@ void ofApp::mapTextInput(ofxDatGuiTextInputEvent e) {
 				vector<string> values = ofSplitString(sValue, ",");
 				if(values.size() == 2) vMaps[index].setRange(dim, ofToFloat(values[0]), ofToFloat(values[1]));
 			}
+			if (prop == "exp") vMaps[index].setExponent(dim, ofToFloat(sValue));
 		}
 		if (prop == "address") vMaps[index].setAddress(sValue);
 	}

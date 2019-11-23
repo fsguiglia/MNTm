@@ -7,6 +7,7 @@ CCMap::CCMap(){
 	_scaled = { { 0 } };
 	_name = -1;
 	_active = false;
+	_exponent = { 1 };
 }
 
 void CCMap::setup(int numKeys, string address) {
@@ -18,6 +19,7 @@ void CCMap::setup(int numKeys, string address) {
 	_ranges.assign(numKeys, initRange);
 	_crop.clear();
 	_crop.assign(numKeys, true);
+	_exponent.assign(numKeys, 1);
 }
 
 void CCMap::setup(vector<string> newKeys, string address){
@@ -28,6 +30,7 @@ void CCMap::setup(vector<string> newKeys, string address){
 	_ranges.assign(_keys.size(), initRange);
 	_crop.clear();
 	_crop.assign(_keys.size(), true);
+	_exponent.assign(_keys.size(), 1);
 }
 
 void CCMap::clear() {
@@ -37,6 +40,7 @@ void CCMap::clear() {
 	_crop = { true };
 	_name = -1;
 	_active = false;
+	_exponent = { 1 };
 }
 
 void CCMap::setName(int value) {
@@ -57,6 +61,10 @@ void CCMap::setAddress(string address) {
 
 void CCMap::setRange(int key, float min, float max) {
 	_ranges[key] = { min,max };
+}
+
+void CCMap::setExponent(int key, float exponent) {
+	_exponent[key] = exponent;
 }
 
 void CCMap::setCrop(int key, bool value) {
@@ -81,6 +89,7 @@ void CCMap::update(vector<map<string, float>> values) {
 					float value = val->second;
 					scale(j, value, _ranges[j], _crop[j]);
 					newValues[j] = value;
+					newValues[j] = glm::pow(newValues[j], _exponent[j]);
 				}
 			}
 			if(keyFound) _scaled.push_back(newValues);
@@ -114,6 +123,10 @@ vector<string> CCMap::getKeys() {
 
 vector<vector <float>> CCMap::getRange() {
 	return _ranges;
+}
+
+vector<float> CCMap::getExponent() {
+	return _exponent;
 }
 
 vector<bool> CCMap::getCrop() {

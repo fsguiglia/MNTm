@@ -13,6 +13,7 @@ public:
 	void setKey(int index, string key);
 	void setAddress(string address);
 	void setRange(int key, float min, float max);
+	void setExponent(int key, float exponent);
 	void setCrop(int key, bool value);
 	void setActive(bool value);
 	void update(vector<map<string, float>> values);
@@ -23,6 +24,7 @@ public:
 	int getName();
 	vector<string> getKeys();
 	vector<vector<float>> getRange();
+	vector<float> getExponent();
 	vector<bool> getCrop();
 
 private:
@@ -30,6 +32,7 @@ private:
 	
 	bool _active;
 	int _name;
+	vector<float> _exponent;
 	vector<vector<float>> _ranges;
 	vector<string> _keys;
 	vector<vector <float>> _scaled;

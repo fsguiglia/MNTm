@@ -32,6 +32,7 @@ public:
 		
 		//io
 		void udpReceive();
+		void oscReceive();
 
 		//input
 		void keyPressed(int key);
@@ -44,7 +45,7 @@ public:
 		void scroll(int & scroll, int width, int size, int dir);
 		void guiSetup();
 
-		//module actions
+		//module add
 		void addPreButton(ofxDatGuiButtonEvent e);
 		void addPreprocessor(vector <Preprocessor> & pres, vector <ofxDatGui*> & guis, int name = -1);
 		void addTrigText(ofxDatGuiTextInputEvent e);
@@ -130,6 +131,7 @@ public:
 		bool receivedNew, mouseControl;
 		vector<map<string, float>> idMap;
 		ofxUDPManager rUDP;
+		ofxOscReceiver oscReceiver;
 		vector<bool> oscSet;
 		vector<int> oscNames; //keeps track of osc destinations
 		vector<string> ipPort;
