@@ -295,7 +295,7 @@ void ofApp::oscReceive() {
 			map <string, float> curMap;
 			receivedNew = true;
 			curMap["id"] = -1 * numMessages;
-			for (int i = 0; i < m.getNumArgs(); i++) curMap[ofToString(i)] = m.getArgAsFloat(i);
+			for (int i = 0; i < m.getNumArgs(); i++) curMap["osc-" + ofToString(i)] = m.getArgAsFloat(i);
 			idMap.push_back(curMap);
 		}
 		numMessages++;
